@@ -796,117 +796,203 @@ colorBtn.addEventListener('click', () => {
   document.documentElement.style.setProperty('--glow', randomColor + '33');
   showToast(`🎨 风格变换：已更新全站主色调`);
 });
-
-/* ════ 🌦️ 粒子系统实现 ════ */
-const weathers = ['sunny', 'rainy', 'snowy'];
-const weatherIcons = { sunny: '☀️', rainy: '🌧️', snowy: '❄️' };
-const weatherNames = { sunny: '晴天', rainy: '雨天', snowy: '雪天' };
-let currentWeather = 'sunny';
-
-const canvas = document.getElementById('weatherCanvas');
-const ctx = canvas.getContext('2d');
-let particles = [];
-let weatherAnimId = null;
-
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-function createParticles() {
-  particles = [];
-  const maxParticles = currentWeather === 'rainy' ? 140 : 100;
+     // ==========================================
+  // 🌦️ 绝对高精对齐版天气系统：像素级筷子磁场引擎
+  // ==========================================
+  let currentWeather = 'sunny';
+  let weatherAnimId = null;
+  const weatherCanvas = document.getElementById('weatherCanvas');
+  const ctx = weatherCanvas.getContext('2d');
   
-  for (let i = 0; i < maxParticles; i++) {
-    if (currentWeather === 'rainy') {
+  let particles = [];
+  
+  // 磁场核心物理参数
+  let magneticField = {
+    x: -9999, 
+    y: -9999,
+    radius: window.innerWidth < 768 ? 45 : 60, // 磁场影响半径
+    force: 0.05                                // 平缓避让力
+  };
+
+  // 响应式画布缩放：完美支持高清屏（DevicePixelRatio）防模糊、防漂移
+  function resizeWeatherCanvas() {
+    const rect = weatherCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    
+    // 设置画布物理像素分辨率（解决缩放造成的坐标偏差）
+    weatherCanvas.width = rect.width * dpr;
+    weatherCanvas.height = rect.height * dpr;
+    
+    // 缩放上下文，使后续所有的绘制和坐标计算可以直接采用 CSS 像素单位
+    ctx.scale(dpr, dpr);
+    
+    magneticField.radius = window.innerWidth < 768 ? 45 : 60;
+  }
+  window.addEventListener('resize', resizeWeatherCanvas);
+  // 初次执行校准
+  setTimeout(resizeWeatherCanvas, 50);
+
+  // 统一提取坐标：100% 还原鼠标指针最尖端的绝对像素点
+  function updateFieldPos(e) {
+    const rect = weatherCanvas.getBoundingClientRect();
+    if (e.touches && e.touches.length > 0) {
+      magneticField.x = e.touches[0].clientX - rect.left;
+      magneticField.y = e.touches[0].clientY - rect.top;
+    } else {
+      magneticField.x = e.clientX - rect.left;
+      magneticField.y = e.clientY - rect.top;
+    }
+  }
+
+  function resetFieldPos() {
+    magneticField.x = -9999;
+    magneticField.y = -9999;
+  }
+
+  // 全局交互监听
+  window.addEventListener('mousemove', updateFieldPos);
+  window.addEventListener('mouseleave', resetFieldPos);
+  window.addEventListener('touchstart', updateFieldPos, { passive: true });
+  window.addEventListener('touchmove', updateFieldPos, { passive: true });
+  window.addEventListener('touchend', resetFieldPos, { passive: true });
+
+  // 初始化粒子群
+  function initWeatherParticles() {
+    particles = [];
+    resetFieldPos();
+    
+    if (currentWeather === 'sunny') return;
+    
+    const isMobile = window.innerWidth < 768;
+    const rect = weatherCanvas.getBoundingClientRect();
+    let count = currentWeather === 'rainy' ? 130 : 70;
+    if (isMobile) count = Math.floor(count * 0.6);
+
+    for (let i = 0; i < count; i++) {
       particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height - canvas.height,
-        length: Math.random() * 20 + 15,
-        speed: Math.random() * 12 + 18,
-        opacity: Math.random() * 0.3 + 0.15,
-        weight: Math.random() * 1 + 1
-      });
-    } else if (currentWeather === 'snowy') {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height - canvas.height,
-        radius: Math.random() * 3 + 1,
-        speedY: Math.random() * 1.5 + 1,
-        speedX: Math.random() * 1 - 0.5,
-        opacity: Math.random() * 0.5 + 0.2
+        x: Math.random() * rect.width,
+        y: Math.random() * rect.height,
+        l: Math.random() * 20 + 15,     // 筷子雨滴的长度
+        v: Math.random() * 2.5 + (currentWeather === 'rainy' ? 4.5 : 1.2), // 慢速垂直下落
+        w: Math.random() * 0.4 - 0.2,    // 极小微风
+        vx: 0,                           
+        vy: 0,                           
+        angle: 0,                        // 旋转角度
+        opacity: Math.random() * 0.3 + 0.15
       });
     }
   }
-}
 
-function updateWeatherParticles() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  if (currentWeather === 'sunny') return;
-  
-  const currentAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  // 天气引擎主循环
+  function updateWeatherParticles() {
+    const rect = weatherCanvas.getBoundingClientRect();
+    // 清除基于缩放后的整个可用区域
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    
+    if (currentWeather !== 'sunny') {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        
+        // 【精准对齐方案】：以雨滴的头部中心 (p.x, p.y) 作为硬性测距判定点
+        const dx = p.x - magneticField.x;
+        const dy = p.y - magneticField.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        let targetAngle = 0; 
+        
+        if (distance < magneticField.radius) {
+          // 线性物理排斥比率
+          const forceFactor = (magneticField.radius - distance) / magneticField.radius;
+          const pushAngle = Math.atan2(dy, dx);
+          
+          // 给粒子施加优雅的边缘滑行加速度
+          const pushX = Math.cos(pushAngle) * forceFactor * 10;
+          const pushY = Math.sin(pushAngle) * forceFactor * 5;
+          
+          p.vx += (pushX - p.vx) * 0.12;
+          p.vy += (pushY - p.vy) * 0.12;
+          
+          // 筷子倾斜公式：完美对齐当前粒子合运动向量的角度
+          targetAngle = Math.atan2(p.v + p.vy, p.w + p.vx) - Math.PI / 2;
+        } else {
+          // 离开磁场后，平滑回滚物理参数
+          p.vx *= 0.88;
+          p.vy *= 0.88;
+          targetAngle = 0;
+        }
 
-  if (currentWeather === 'rainy') {
-    ctx.strokeStyle = currentAccent || 'rgba(156, 180, 220, 0.4)';
-    for (let i = 0; i < particles.length; i++) {
-      let p = particles[i];
-      ctx.beginPath();
-      ctx.lineWidth = p.weight;
-      ctx.globalAlpha = p.opacity;
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x - 2, p.y + p.length);
-      ctx.stroke();
-      
-      p.y += p.speed;
-      p.x -= 0.5;
-      
-      if (p.y > canvas.height) {
-        p.y = -p.length;
-        p.x = Math.random() * canvas.width;
+        // 惯性平滑旋转过度
+        p.angle += (targetAngle - p.angle) * 0.15;
+
+        // 应用最终位移
+        p.x += (p.w + p.vx);
+        p.y += (p.v + p.vy);
+
+        // 边界包容循环
+        if (p.y > rect.height) {
+          p.y = -p.l;
+          p.x = Math.random() * rect.width;
+          p.vx = 0;
+          p.vy = 0;
+          p.angle = 0;
+        }
+        if (p.x > rect.width) p.x = 0;
+        else if (p.x < 0) p.x = rect.width;
+
+        // 【绝对坐标不偏离绘制】：不再动用全局 Canvas 坐标轴扭转
+        if (currentWeather === 'rainy') {
+          ctx.beginPath();
+          // 利用三角函数算出在 absolute 模式下筷子雨线两端延伸的精准位置
+          const sinA = Math.sin(p.angle);
+          const cosA = Math.cos(p.angle);
+          
+          // 筷子头部位置
+          ctx.moveTo(p.x, p.y);
+          // 筷子尾部位置（根据角度向后延伸）
+          ctx.lineTo(p.x - p.l * sinA, p.y + p.l * cosA);
+          
+          ctx.strokeStyle = isDark ? `rgba(156, 207, 255, ${p.opacity})` : `rgba(0, 105, 218, ${p.opacity * 0.55})`;
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+        } else if (currentWeather === 'snowy') {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.l * 0.14, 0, Math.PI * 2);
+          ctx.fillStyle = isDark ? `rgba(255, 255, 255, ${p.opacity * 0.85})` : `rgba(90, 96, 112, ${p.opacity * 0.45})`;
+          ctx.fill();
+        }
       }
     }
-  } else if (currentWeather === 'snowy') {
-    ctx.fillStyle = html.dataset.theme === 'light' ? (currentAccent || '#888') : '#ffffff';
-    for (let i = 0; i < particles.length; i++) {
-      let p = particles[i];
-      ctx.beginPath();
-      ctx.globalAlpha = p.opacity;
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fill();
-      
-      p.y += p.speedY;
-      p.x += p.speedX;
-      
-      if (Math.random() < 0.02) p.speedX = Math.random() * 1 - 0.5;
-      
-      if (p.y > canvas.height || p.x < 0 || p.x > canvas.width) {
-        p.y = -10;
-        p.x = Math.random() * canvas.width;
-      }
-    }
+
+    weatherAnimId = requestAnimationFrame(updateWeatherParticles);
   }
-  ctx.globalAlpha = 1.0;
+
+  // 天气控制器
+  function setWeather(type) {
+    currentWeather = type;
+    const btn = document.getElementById('weatherBtn');
+    if (type === 'sunny') btn.textContent = '☀️';
+    else if (type === 'rainy') btn.textContent = '🌧️';
+    else if (type === 'snowy') btn.textContent = '❄️';
+    
+    initWeatherParticles();
+    showToast(`当前全站天气已切换为：${type === 'sunny' ? '晴朗' : type === 'rainy' ? '细雨绵绵' : '漫天飞雪'}`);
+  }
+
+  document.getElementById('weatherBtn').addEventListener('click', () => {
+    if (currentWeather === 'sunny') setWeather('rainy');
+    else if (currentWeather === 'rainy') setWeather('snowy');
+    else setWeather('sunny');
+  });
+
+  // 启动初始化
+  initWeatherParticles();
+  resizeWeatherCanvas();
   weatherAnimId = requestAnimationFrame(updateWeatherParticles);
-}
 
-weatherBtn.addEventListener('click', () => {
-  const currentIdx = weathers.indexOf(currentWeather);
-  currentWeather = weathers[(currentIdx + 1) % weathers.length];
-  
-  weatherBtn.textContent = weatherIcons[currentWeather];
-  showToast(`🌦️ 气象异动：全站已切换为【${weatherNames[currentWeather]}】`);
-  
-  cancelAnimationFrame(weatherAnimId);
-  if (currentWeather !== 'sunny') {
-    createParticles();
-    updateWeatherParticles();
-  } else {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-});
+
+
 
 /* ════ 鼠标跟随高光折射 ════ */
 document.querySelectorAll('.glass').forEach(card => {
@@ -1150,6 +1236,9 @@ contribObs.observe(document.querySelector('.contrib-card'));
       footerEl.innerHTML = `几渡 · 2026 · 用 ♥ 和咖啡驱动 · <span style="font-family:'Noto Serif SC';">访问量</span> <span class="visits-num">${localCount}</span>`;
     });
 })();
+
+
+
 
 /* ════ 人生进度条系统 ════ */
 (function() {
