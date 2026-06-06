@@ -328,7 +328,7 @@
     }
     .tag:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px) scale(1.04); box-shadow: 0 6px 16px var(--glow); }
 
-    /* Progress */
+    /* Progress & Global Bars */
     .progress-card { padding: 24px 28px; }
     .progress-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg3); margin-bottom: 18px; }
     .progress-item { margin-bottom: 16px; }
@@ -337,7 +337,6 @@
     .progress-name { color: var(--fg); display: flex; align-items: center; gap: 6px; }
     .progress-percent { color: var(--fg2); font-size: 12px; }
     .progress-bar-bg { height: 6px; background: var(--surface2); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
-    .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 4px; transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1); box-shadow: 0 0 8px var(--glow); }
 
     /* Links */
     .links-card { padding: 16px; }
@@ -416,6 +415,81 @@
 
     @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(63,185,80,0.5); } 50% { box-shadow: 0 0 0 5px rgba(63,185,80,0); } }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ════ 创意4：全站色彩水墨晕染缓动过渡 ════ */
+    *, *::before, *::after {
+      transition: background-color 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                  border-color 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                  box-shadow 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                  color 0.3s ease;
+    }
+    /* 排除高频变动的人生进度条，防止换色过渡导致进度条变形伸展卡顿 */
+    #lifeBar, .life-bar-fill {
+      transition: width 0.1s linear !important;
+    }
+
+    /* ════ 第三点：全站进度条通用高级无绿流光特效 ════ */
+    .life-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      /* 💎 移除绿色，改为自适应全站强调色(--accent)的高级流光 */
+      background: linear-gradient(90deg, var(--accent), rgba(255,255,255,0.3), var(--accent));
+      background-size: 200% 100%;
+      animation: barFlow 3s linear infinite, barInitReveal 1.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      box-shadow: 0 0 12px var(--glow);
+      position: relative;
+      overflow: hidden;
+      transform-origin: left center;
+      will-change: width, transform; /* 性能打磨：开启显卡硬件加速通道 */
+    }
+
+    /* 顶部玻璃微光折射 */
+    .life-bar-fill::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
+      border-radius: 4px 4px 0 0;
+    }
+
+    /* 扫光流烁特效 */
+    .life-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: barSweep 3.5s ease-in-out infinite;
+      transform: skewX(-20deg);
+    }
+
+    /* ════ 创意2：GitHub贡献瓷砖“今天”呼吸灯特效 ════ */
+    .contrib-today {
+      position: relative;
+      background-color: var(--accent) !important;
+      box-shadow: 0 0 8px var(--glow);
+      animation: tilePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* 动画关键帧中心 */
+    @keyframes barFlow {
+      0% { background-position: 200% 0; }
+      100% { background-position: 0 0; }
+    }
+    @keyframes barSweep {
+      0% { left: -100%; }
+      40%, 100% { left: 200%; }
+    }
+    @keyframes barInitReveal {
+      0% { transform: scaleX(0); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: scaleX(1); }
+    }
+    @keyframes tilePulse {
+      0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 4px var(--glow); }
+      50% { transform: scale(1.08); opacity: 0.8; box-shadow: 0 0 12px var(--glow); }
+    }
 
     @media (max-width: 640px) {
       .nav-items, .nav-right .nav-cta { display: none; }
@@ -596,12 +670,15 @@
   </div>
 
   <div class="glass tags-card reveal" style="transition-delay:0.1s">
-    <div class="tags-label" style="display:flex; justify-content:space-between; align-items:center;">
-      <span>⏳ 人生进度条 </span>
+    <div class="tags-label" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span>⏳ 人生进度条</span>
+        <span id="lifeMotto" style="font-size:11px; padding:2px 6px; background:var(--surface3); border:1px solid var(--border); border-radius:4px; color:var(--accent); opacity:0.85; font-weight:normal;">载入中...</span>
+      </div>
       <span id="lifePercent" style="font-family:'DM Mono'; color:var(--accent); font-weight:500;">0.000000%</span>
     </div>
     <div style="width:100%; height:6px; background:var(--surface2); border-radius:4px; margin-top:10px; overflow:hidden; border:1px solid var(--border);">
-      <div id="lifeBar" style="width:0%; height:100%; background:linear-gradient(90deg, var(--accent), var(--green)); transition:width 0.4s var(--ease); border-radius:4px; box-shadow: 0 0 8px var(--glow);"></div>
+      <div id="lifeBar" class="life-bar-fill"></div>
     </div>
   </div>
 
@@ -614,7 +691,7 @@
         <span class="progress-percent">75%</span>
       </div>
       <div class="progress-bar-bg">
-        <div class="progress-bar-fill" data-progress="75%"></div>
+        <div class="life-bar-fill" data-progress="75%"></div>
       </div>
     </div>
 
@@ -624,17 +701,17 @@
         <span class="progress-percent">90%</span>
       </div>
       <div class="progress-bar-bg">
-        <div class="progress-bar-fill" data-progress="90%"></div>
+        <div class="life-bar-fill" data-progress="90%"></div>
       </div>
     </div>
 
     <div class="progress-item">
       <div class="progress-info">
-        <span class="progress-name">🌐 HTML5 模板</span>
+        <span class="progress-name">🌐 HTML5 互动式简历模板</span>
         <span class="progress-percent">45%</span>
       </div>
       <div class="progress-bar-bg">
-        <div class="progress-bar-fill" data-progress="45%"></div>
+        <div class="life-bar-fill" data-progress="45%"></div>
       </div>
     </div>
   </div>
@@ -823,8 +900,11 @@ const revealObs = new IntersectionObserver((entries) => {
     if (e.isIntersecting) { 
       e.target.classList.add('visible'); 
       if (e.target.classList.contains('progress-card')) {
-        e.target.querySelectorAll('.progress-bar-fill').forEach(bar => {
-          bar.style.width = bar.dataset.progress;
+        e.target.querySelectorAll('.progress-bar-fill, .life-bar-fill').forEach(bar => {
+          // 只给“正在折腾”的小进度条在进入视野时进行宽度赋予
+          if (bar.dataset.progress) {
+            bar.style.width = bar.dataset.progress;
+          }
         });
       }
       revealObs.unobserve(e.target); 
@@ -957,23 +1037,105 @@ contribObs.observe(document.querySelector('.contrib-card'));
     });
 })();
 
-/* ════ 2011年6月8日生日高精度人生进度条计算 ════ */
-function updateLifeProgress() {
-  const birthDate = new Date(2011, 5, 8, 0, 0, 0); // 2011年6月8日 (JS中5代表6月)
-  const lifeExpectancyYears = 80; 
-  const endDate = new Date(birthDate.getFullYear() + lifeExpectancyYears, birthDate.getMonth(), birthDate.getDate());
+/* ════════════════════════════════════════════════════════════
+   🎨 几渡主页核心动效控制中心 (人生进度条与时空联动系统)
+   ════════════════════════════════════════════════════════════ */
+(function() {
+  // 1. 第四点优化：使用严谨的符合 ISO 标准的日期字符串，规避月份偏置二义性
+  const BIRTH_STR = "2011-06-08T00:00:00"; 
+  const LIFE_EXPECTANCY = 80;
   
-  const now = new Date();
+  const birthDate = new Date(BIRTH_STR);
+  const endDate = new Date(birthDate.getFullYear() + LIFE_EXPECTANCY, birthDate.getMonth(), birthDate.getDate());
   const totalLifeMs = endDate - birthDate;
-  const passedLifeMs = now - birthDate;
-  
-  const progress = Math.max(0, Math.min(passedLifeMs / totalLifeMs, 1));
-  
-  document.getElementById('lifePercent').textContent = (progress * 100).toFixed(6) + '%';
-  document.getElementById('lifeBar').style.width = (progress * 100) + '%';
-}
-setInterval(updateLifeProgress, 1000); 
-updateLifeProgress();
+
+  // DOM 缓存
+  const percentEl = document.getElementById('lifePercent');
+  const barEl = document.getElementById('lifeBar');
+  const mottoEl = document.getElementById('lifeMotto');
+
+  const startTime = performance.now();
+  const introDuration = 1600; // 与 CSS 生长开场动画保持高度同步 (1.6秒)
+  let animationFrameId = null;
+
+  // 2. 创意1：时光寄语触发内核
+  function getLifeMotto(progressPercent) {
+    const hour = new Date().getHours();
+    
+    // 优先匹配当前时段寄语
+    if (hour >= 0 && hour < 5) return "🌙 夜深了，极客也该给代码充个电了";
+    if (hour >= 5 && hour < 9) return "✨ 晨光熹微，新的一天，按秒前行";
+    if (hour >= 11 && hour < 14) return "☕ 午休时刻，进度条在走，记得多喝水";
+    if (hour >= 18 && hour < 21) return "🌆 暮色拉起，今晚又是折腾代码的好时机？";
+    
+    // 其次降级匹配年龄阶段寄语
+    if (progressPercent < 18) return "🚀 少年有梦，正当扬帆起航";
+    if (progressPercent >= 18 && progressPercent < 25) return "🎓 破浪前行，黄金时代的无尽探索";
+    return "⚡ 保持热爱，奔赴下一场山海";
+  }
+
+  // 3. 创意2：自动寻找 GitHub 格子矩阵中的“今天”并注入柔和呼吸灯
+  function highlightTodayTile() {
+    const gridEl = document.getElementById('contribGrid');
+    if (!gridEl) return;
+    
+    // 定时轮询确保瓷砖生成完毕后精准捕捉
+    const checkTimer = setInterval(() => {
+      const tiles = gridEl.querySelectorAll('.contrib-cell');
+      if (tiles.length > 0) {
+        clearInterval(checkTimer);
+        // 让最新/最后一格代表“当前当下”，使其开始缓慢高亮呼吸
+        const todayTile = tiles[tiles.length - 1]; 
+        if (todayTile) {
+          todayTile.classList.add('contrib-today');
+          todayTile.setAttribute('title', '🎯 此时此刻：你正在见证时间的流逝');
+        }
+      }
+    }, 50);
+  }
+
+  // 4. 高频核心循环渲染器
+  function render(nowTime) {
+    const now = new Date();
+    const passedLifeMs = now - birthDate;
+    const targetProgress = Math.max(0, Math.min(passedLifeMs / totalLifeMs, 1));
+    
+    const elapsed = nowTime - startTime;
+    const t = Math.min(elapsed / introDuration, 1);
+    
+    // 匀减速开场缓动公式: 1 - (1 - t)^2
+    const easeProgress = 1 - Math.pow(1 - t, 2); 
+    const currentProgress = targetProgress * easeProgress;
+    const currentPercent = currentProgress * 100;
+    const targetPercent = targetProgress * 100;
+
+    if (t < 1) {
+      percentEl.textContent = currentPercent.toFixed(6) + '%';
+      barEl.style.width = currentPercent + '%';
+      mottoEl.textContent = "🚀 正在构筑时间序列...";
+    } else {
+      percentEl.textContent = targetPercent.toFixed(9) + '%';
+      barEl.style.width = targetPercent + '%';
+      mottoEl.textContent = getLifeMotto(targetPercent);
+    }
+
+    animationFrameId = requestAnimationFrame(render);
+  }
+
+  // 5. 性能打磨：进入后台时挂起重绘，切回时秒级唤醒，将电量开销压缩至极限
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      cancelAnimationFrame(animationFrameId);
+    } else {
+      animationFrameId = requestAnimationFrame(render);
+    }
+  }
+
+  // 激发系统
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  highlightTodayTile();
+  animationFrameId = requestAnimationFrame(render);
+})();
 </script>
 </body>
 </html>
