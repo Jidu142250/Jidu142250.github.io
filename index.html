@@ -62,6 +62,16 @@
       transition: background 0.4s var(--ease), color 0.4s var(--ease);
     }
 
+    /* ── 🌦️ 升级：全屏天气粒子系统提升至全站最高层级 ── */
+    #weatherCanvas {
+      position: fixed; 
+      inset: 0; 
+      z-index: 99999;       /* 绝对最高层，覆盖一切元素，包括导航栏 */
+      pointer-events: none; /* 核心黑科技：允许鼠标事件完美穿透画布，不遮挡任何点击 */
+      width: 100vw; 
+      height: 100vh;
+    }
+
     /* ── BG mesh ── */
     .bg-mesh { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
     .bg-mesh::before {
@@ -175,14 +185,14 @@
 
     /* nav right */
     .nav-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-    .theme-btn, .color-btn {
+    .theme-btn, .color-btn, .weather-btn {
       width: 34px; height: 34px; border-radius: 8px;
       border: 1px solid var(--border2); background: var(--surface2);
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       font-size: 14px; transition: border-color 0.25s, transform 0.3s var(--spring);
       position: relative; overflow: visible;
     }
-    .theme-btn:hover, .color-btn:hover { border-color: var(--accent); transform: scale(1.05); }
+    .theme-btn:hover, .color-btn:hover, .weather-btn:hover { border-color: var(--accent); transform: scale(1.05); }
     .nav-cta {
       display: flex; align-items: center; gap: 6px; padding: 6px 14px;
       border-radius: 8px; background: var(--fg); color: var(--bg);
@@ -255,7 +265,7 @@
 
     /* ══════════ PAGE ══════════ */
     .page {
-      position: relative; z-index: 1;
+      position: relative; z-index: 10; 
       max-width: 560px; margin: 0 auto;
       padding: calc(var(--nav-h) + 36px) 20px 80px;
       display: flex; flex-direction: column; gap: 20px;
@@ -328,7 +338,7 @@
     }
     .tag:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px) scale(1.04); box-shadow: 0 6px 16px var(--glow); }
 
-    /* Progress */
+    /* Progress & Global Bars */
     .progress-card { padding: 24px 28px; }
     .progress-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg3); margin-bottom: 18px; }
     .progress-item { margin-bottom: 16px; }
@@ -337,7 +347,6 @@
     .progress-name { color: var(--fg); display: flex; align-items: center; gap: 6px; }
     .progress-percent { color: var(--fg2); font-size: 12px; }
     .progress-bar-bg { height: 6px; background: var(--surface2); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
-    .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 4px; transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1); box-shadow: 0 0 8px var(--glow); }
 
     /* Links */
     .links-card { padding: 16px; }
@@ -417,6 +426,76 @@
     @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(63,185,80,0.5); } 50% { box-shadow: 0 0 0 5px rgba(63,185,80,0); } }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
+    /* 水墨晕染缓动过渡 */
+    *, *::before, *::after {
+      transition: background-color 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                  border-color 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                  box-shadow 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                  color 0.3s ease;
+    }
+    #lifeBar, .life-bar-fill {
+      transition: width 0.1s linear !important;
+    }
+
+    /* 全站进度条通用流光特效 */
+    .life-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), rgba(255,255,255,0.3), var(--accent));
+      background-size: 200% 100%;
+      animation: barFlow 3s linear infinite, barInitReveal 1.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      box-shadow: 0 0 12px var(--glow);
+      position: relative;
+      overflow: hidden;
+      transform-origin: left center;
+      will-change: width, transform;
+    }
+
+    .life-bar-fill::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
+      border-radius: 4px 4px 0 0;
+    }
+
+    .life-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: barSweep 3.5s ease-in-out infinite;
+      transform: skewX(-20deg);
+    }
+
+    /* GitHub贡献瓷砖“今天”呼吸灯特效 */
+    .contrib-today {
+      position: relative;
+      background-color: var(--accent) !important;
+      box-shadow: 0 0 8px var(--glow);
+      animation: tilePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes barFlow {
+      0% { background-position: 200% 0; }
+      100% { background-position: 0 0; }
+    }
+    @keyframes barSweep {
+      0% { left: -100%; }
+      40%, 100% { left: 200%; }
+    }
+    @keyframes barInitReveal {
+      0% { transform: scaleX(0); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: scaleX(1); }
+    }
+    @keyframes tilePulse {
+      0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 4px var(--glow); }
+      50% { transform: scale(1.08); opacity: 0.8; box-shadow: 0 0 12px var(--glow); }
+    }
+
     @media (max-width: 640px) {
       .nav-items, .nav-right .nav-cta { display: none; }
       .nav-hamburger { display: flex; }
@@ -428,6 +507,8 @@
   </style>
 </head>
 <body>
+
+<canvas id="weatherCanvas"></canvas>
 
 <div class="bg-mesh"></div>
 <div class="nav-backdrop" id="navBackdrop"></div>
@@ -455,7 +536,7 @@
           </a>
           <div class="drop-item" style="opacity:.5;cursor:default">
             <div class="drop-icon">🔭</div>
-            <div class="drop-text"><div class="drop-name">图床工具 <span style="font-size:10px;color:var(--fg3)">(WIP)</span></div><div class="drop-desc">自托管图床 + CDN 分发</div></div>
+            <div class="drop-text"><div class="drop-name">图床工具 <span style="font-size:10px;color:var(--fg3)">(WIP)</span></div><div class="drop-desc">自托管图床 + CDN 分分发</div></div>
           </div>
           <a class="drop-item" href="https://github.com/Jidu142250" target="_blank">
             <div class="drop-icon">⚙️</div>
@@ -511,8 +592,9 @@
     </div>
 
     <div class="nav-right">
+      <button class="weather-btn" id="weatherBtn" title="切换全站天气系统 (晴/雨/雪)">☀️</button>
       <button class="color-btn" id="colorBtn" title="随机切换主题色">🎨</button>
-      <button class="theme-btn" id="themeBtn" title="切换深浅模式">☀️</button>
+      <button class="theme-btn" id="themeBtn" title="切换深浅模式">🌙</button>
       <a class="nav-cta" href="https://github.com/Jidu142250" target="_blank">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
         GitHub
@@ -596,12 +678,15 @@
   </div>
 
   <div class="glass tags-card reveal" style="transition-delay:0.1s">
-    <div class="tags-label" style="display:flex; justify-content:space-between; align-items:center;">
-      <span>⏳ 人生进度条 </span>
+    <div class="tags-label" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span>⏳ 人生进度条</span>
+        <span id="lifeMotto" style="font-size:11px; padding:2px 6px; background:var(--surface3); border:1px solid var(--border); border-radius:4px; color:var(--accent); opacity:0.85; font-weight:normal;">载入中...</span>
+      </div>
       <span id="lifePercent" style="font-family:'DM Mono'; color:var(--accent); font-weight:500;">0.000000%</span>
     </div>
     <div style="width:100%; height:6px; background:var(--surface2); border-radius:4px; margin-top:10px; overflow:hidden; border:1px solid var(--border);">
-      <div id="lifeBar" style="width:0%; height:100%; background:linear-gradient(90deg, var(--accent), var(--green)); transition:width 0.4s var(--ease); border-radius:4px; box-shadow: 0 0 8px var(--glow);"></div>
+      <div id="lifeBar" class="life-bar-fill"></div>
     </div>
   </div>
 
@@ -614,7 +699,7 @@
         <span class="progress-percent">75%</span>
       </div>
       <div class="progress-bar-bg">
-        <div class="progress-bar-fill" data-progress="75%"></div>
+        <div class="life-bar-fill" data-progress="75%"></div>
       </div>
     </div>
 
@@ -624,17 +709,17 @@
         <span class="progress-percent">90%</span>
       </div>
       <div class="progress-bar-bg">
-        <div class="progress-bar-fill" data-progress="90%"></div>
+        <div class="life-bar-fill" data-progress="90%"></div>
       </div>
     </div>
 
     <div class="progress-item">
       <div class="progress-info">
-        <span class="progress-name">🌐 HTML5 模板</span>
+        <span class="progress-name">🌐 HTML5 互动式简历模板</span>
         <span class="progress-percent">45%</span>
       </div>
       <div class="progress-bar-bg">
-        <div class="progress-bar-fill" data-progress="45%"></div>
+        <div class="life-bar-fill" data-progress="45%"></div>
       </div>
     </div>
   </div>
@@ -688,8 +773,8 @@
 const html = document.documentElement;
 const themeBtn = document.getElementById('themeBtn');
 const colorBtn = document.getElementById('colorBtn');
+const weatherBtn = document.getElementById('weatherBtn');
 
-// 精选的高级强调色配色库
 const accentColors = ['#58a6ff', '#ff79c6', '#50fa7b', '#ffb86c', '#bd93f9', '#ff5555', '#8be9fd', '#ff6b6b', '#a855f7', '#0969da'];
 
 (function() {
@@ -705,18 +790,125 @@ themeBtn.addEventListener('click', () => {
   localStorage.setItem('theme', nextTheme);
 });
 
-// 常驻正式功能：点击调色盘，随机切换全站主题色
 colorBtn.addEventListener('click', () => {
   const randomColor = accentColors[Math.floor(Math.random() * accentColors.length)];
-  
-  // 通过根节点注入，全局覆盖默认变量
   document.documentElement.style.setProperty('--accent', randomColor);
-  document.documentElement.style.setProperty('--glow', randomColor + '33'); // 携带透明度的发光外阴影
-  
+  document.documentElement.style.setProperty('--glow', randomColor + '33');
   showToast(`🎨 风格变换：已更新全站主色调`);
 });
 
-/* ════ 鼠标跟随高光折射（Spotlight） ════ */
+/* ════ 🌦️ 粒子系统实现 ════ */
+const weathers = ['sunny', 'rainy', 'snowy'];
+const weatherIcons = { sunny: '☀️', rainy: '🌧️', snowy: '❄️' };
+const weatherNames = { sunny: '晴天', rainy: '雨天', snowy: '雪天' };
+let currentWeather = 'sunny';
+
+const canvas = document.getElementById('weatherCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let weatherAnimId = null;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function createParticles() {
+  particles = [];
+  const maxParticles = currentWeather === 'rainy' ? 140 : 100;
+  
+  for (let i = 0; i < maxParticles; i++) {
+    if (currentWeather === 'rainy') {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        length: Math.random() * 20 + 15,
+        speed: Math.random() * 12 + 18,
+        opacity: Math.random() * 0.3 + 0.15,
+        weight: Math.random() * 1 + 1
+      });
+    } else if (currentWeather === 'snowy') {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        radius: Math.random() * 3 + 1,
+        speedY: Math.random() * 1.5 + 1,
+        speedX: Math.random() * 1 - 0.5,
+        opacity: Math.random() * 0.5 + 0.2
+      });
+    }
+  }
+}
+
+function updateWeatherParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  if (currentWeather === 'sunny') return;
+  
+  const currentAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+
+  if (currentWeather === 'rainy') {
+    ctx.strokeStyle = currentAccent || 'rgba(156, 180, 220, 0.4)';
+    for (let i = 0; i < particles.length; i++) {
+      let p = particles[i];
+      ctx.beginPath();
+      ctx.lineWidth = p.weight;
+      ctx.globalAlpha = p.opacity;
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - 2, p.y + p.length);
+      ctx.stroke();
+      
+      p.y += p.speed;
+      p.x -= 0.5;
+      
+      if (p.y > canvas.height) {
+        p.y = -p.length;
+        p.x = Math.random() * canvas.width;
+      }
+    }
+  } else if (currentWeather === 'snowy') {
+    ctx.fillStyle = html.dataset.theme === 'light' ? (currentAccent || '#888') : '#ffffff';
+    for (let i = 0; i < particles.length; i++) {
+      let p = particles[i];
+      ctx.beginPath();
+      ctx.globalAlpha = p.opacity;
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      p.y += p.speedY;
+      p.x += p.speedX;
+      
+      if (Math.random() < 0.02) p.speedX = Math.random() * 1 - 0.5;
+      
+      if (p.y > canvas.height || p.x < 0 || p.x > canvas.width) {
+        p.y = -10;
+        p.x = Math.random() * canvas.width;
+      }
+    }
+  }
+  ctx.globalAlpha = 1.0;
+  weatherAnimId = requestAnimationFrame(updateWeatherParticles);
+}
+
+weatherBtn.addEventListener('click', () => {
+  const currentIdx = weathers.indexOf(currentWeather);
+  currentWeather = weathers[(currentIdx + 1) % weathers.length];
+  
+  weatherBtn.textContent = weatherIcons[currentWeather];
+  showToast(`🌦️ 气象异动：全站已切换为【${weatherNames[currentWeather]}】`);
+  
+  cancelAnimationFrame(weatherAnimId);
+  if (currentWeather !== 'sunny') {
+    createParticles();
+    updateWeatherParticles();
+  } else {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+});
+
+/* ════ 鼠标跟随高光折射 ════ */
 document.querySelectorAll('.glass').forEach(card => {
   card.addEventListener('mousemove', e => {
     const rect = card.getBoundingClientRect();
@@ -823,8 +1015,10 @@ const revealObs = new IntersectionObserver((entries) => {
     if (e.isIntersecting) { 
       e.target.classList.add('visible'); 
       if (e.target.classList.contains('progress-card')) {
-        e.target.querySelectorAll('.progress-bar-fill').forEach(bar => {
-          bar.style.width = bar.dataset.progress;
+        e.target.querySelectorAll('.progress-bar-fill, .life-bar-fill').forEach(bar => {
+          if (bar.dataset.progress) {
+            bar.style.width = bar.dataset.progress;
+          }
         });
       }
       revealObs.unobserve(e.target); 
@@ -957,23 +1151,93 @@ contribObs.observe(document.querySelector('.contrib-card'));
     });
 })();
 
-/* ════ 2011年6月8日生日高精度人生进度条计算 ════ */
-function updateLifeProgress() {
-  const birthDate = new Date(2011, 5, 8, 0, 0, 0); // 2011年6月8日 (JS中5代表6月)
-  const lifeExpectancyYears = 80; 
-  const endDate = new Date(birthDate.getFullYear() + lifeExpectancyYears, birthDate.getMonth(), birthDate.getDate());
+/* ════ 人生进度条系统 ════ */
+(function() {
+  const BIRTH_STR = "2011-06-08T00:00:00"; 
+  const LIFE_EXPECTANCY = 80;
   
-  const now = new Date();
+  const birthDate = new Date(BIRTH_STR);
+  const endDate = new Date(birthDate.getFullYear() + LIFE_EXPECTANCY, birthDate.getMonth(), birthDate.getDate());
   const totalLifeMs = endDate - birthDate;
-  const passedLifeMs = now - birthDate;
-  
-  const progress = Math.max(0, Math.min(passedLifeMs / totalLifeMs, 1));
-  
-  document.getElementById('lifePercent').textContent = (progress * 100).toFixed(6) + '%';
-  document.getElementById('lifeBar').style.width = (progress * 100) + '%';
-}
-setInterval(updateLifeProgress, 1000); 
-updateLifeProgress();
+
+  const percentEl = document.getElementById('lifePercent');
+  const barEl = document.getElementById('lifeBar');
+  const mottoEl = document.getElementById('lifeMotto');
+
+  const startTime = performance.now();
+  const introDuration = 1600; 
+  let animationFrameId = null;
+
+  function getLifeMotto(progressPercent) {
+    const hour = new Date().getHours();
+    if (hour >= 0 && hour < 5) return "🌙 夜深了，极客也该给代码充个电了";
+    if (hour >= 5 && hour < 9) return "✨ 晨光熹微，新的一天，按秒前行";
+    if (hour >= 11 && hour < 14) return "☕ 午休时刻，进度条在走，记得多喝水";
+    if (hour >= 18 && hour < 21) return "🌆 暮色拉起，今晚又是折腾代码的好时机？";
+    if (progressPercent < 18) return "🚀 少年有梦，正当扬帆起航";
+    if (progressPercent >= 18 && progressPercent < 25) return "🎓 破浪前行，黄金时代的无尽探索";
+    return "⚡ 保持热爱，奔赴下一场山海";
+  }
+
+  function highlightTodayTile() {
+    const gridEl = document.getElementById('contribGrid');
+    if (!gridEl) return;
+    
+    const checkTimer = setInterval(() => {
+      const tiles = gridEl.querySelectorAll('.contrib-cell');
+      if (tiles.length > 0) {
+        clearInterval(checkTimer);
+        const todayTile = tiles[tiles.length - 1]; 
+        if (todayTile) {
+          todayTile.classList.add('contrib-today');
+          todayTile.setAttribute('title', '🎯 此时此刻：你正在见证时间的流逝');
+        }
+      }
+    }, 50);
+  }
+
+  function render(nowTime) {
+    const now = new Date();
+    const passedLifeMs = now - birthDate;
+    const targetProgress = Math.max(0, Math.min(passedLifeMs / totalLifeMs, 1));
+    
+    const elapsed = nowTime - startTime;
+    const t = Math.min(elapsed / introDuration, 1);
+    
+    const easeProgress = 1 - Math.pow(1 - t, 2); 
+    const currentProgress = targetProgress * easeProgress;
+    const currentPercent = currentProgress * 100;
+    const targetPercent = targetProgress * 100;
+
+    if (t < 1) {
+      percentEl.textContent = currentPercent.toFixed(6) + '%';
+      barEl.style.width = currentPercent + '%';
+      mottoEl.textContent = "🚀 正在构筑时间序列...";
+    } else {
+      percentEl.textContent = targetPercent.toFixed(9) + '%';
+      barEl.style.width = targetPercent + '%';
+      mottoEl.textContent = getLifeMotto(targetPercent);
+    }
+
+    animationFrameId = requestAnimationFrame(render);
+  }
+
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      cancelAnimationFrame(animationFrameId);
+      cancelAnimationFrame(weatherAnimId);
+    } else {
+      animationFrameId = requestAnimationFrame(render);
+      if (currentWeather !== 'sunny') {
+        weatherAnimId = requestAnimationFrame(updateWeatherParticles);
+      }
+    }
+  }
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  highlightTodayTile();
+  animationFrameId = requestAnimationFrame(render);
+})();
 </script>
 </body>
 </html>
