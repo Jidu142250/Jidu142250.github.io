@@ -1848,38 +1848,113 @@ contribObs.observe(document.querySelector('.contrib-card'));
   </div>
   <!-- 拖动把手 -->
   <div class="mp-drag-handle" id="mpDragHandle">⠿</div>
+  <!-- 迷你模式播放指示点 -->
+  <div class="mp-mini-indicator" id="mpMiniIndicator"></div>
 </div>
 
 <style>
-/* ══ 音乐播放器样式 ══ */
+/* ══════════════════════════════════════════
+   🎵 音乐播放器 · 移动优先重制版
+   状态：normal（展开）/ mini（迷你靠边）
+   ══════════════════════════════════════════ */
+
+/* ── 容器 ── */
 .mp-wrap {
-  position: fixed; bottom: 28px; right: 24px; z-index: 9980;
-  width: 340px; border-radius: 22px;
-  background: rgba(12,16,22,0.72);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.09);
+  position: fixed;
+  /* 桌面端：右下角固定 */
+  bottom: 28px; right: 24px;
+  z-index: 9980;
+  width: 340px;
+  border-radius: 22px;
+  background: rgba(12,16,22,0.82);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.1);
   box-shadow: 0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
   overflow: hidden;
-  transition: box-shadow 0.4s ease, transform 0.3s ease;
+  /* transition 只作用于 mini 状态切换，拖拽时由 JS 临时禁用 */
+  transition: width 0.4s cubic-bezier(0.34,1.2,0.64,1),
+              border-radius 0.4s cubic-bezier(0.34,1.2,0.64,1),
+              opacity 0.35s ease,
+              box-shadow 0.4s ease;
   user-select: none;
+  touch-action: none; /* 阻止浏览器的默认滚动，让我们自己处理 touch */
 }
 [data-theme="light"] .mp-wrap {
-  background: rgba(240,242,245,0.72);
+  background: rgba(240,242,245,0.88);
   border-color: rgba(0,0,0,0.08);
   box-shadow: 0 20px 60px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.7);
 }
-.mp-wrap:hover { box-shadow: 0 28px 80px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.08); }
+
+/* ── 移动端：全宽，底部居中 ── */
+@media (max-width: 640px) {
+  .mp-wrap {
+    width: calc(100vw - 32px);
+    left: 16px; right: 16px;
+    bottom: 20px;
+  }
+}
+
+/* ─── 迷你状态 ─── */
+/* mini 时播放器缩为一个胶囊，紧贴屏幕右边缘（或左边缘，由 JS 决定） */
+.mp-wrap.mp-mini {
+  width: 64px;
+  border-radius: 32px;
+  opacity: 0.82;
+  /* 展开内容全部隐藏，只露出封面 */
+}
+.mp-wrap.mp-mini .mp-info,
+.mp-wrap.mp-mini .mp-playlist,
+.mp-wrap.mp-mini .mp-list-btn,
+.mp-wrap.mp-mini .mp-drag-handle {
+  display: none;
+}
+.mp-wrap.mp-mini .mp-inner {
+  padding: 8px;
+  gap: 0;
+  flex-direction: column;
+  align-items: center;
+}
+.mp-wrap.mp-mini .mp-cover-wrap {
+  width: 48px; height: 48px;
+}
+.mp-wrap.mp-mini .mp-cover {
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  font-size: 22px;
+}
+/* mini 时封面上叠加一个半透明播放指示器 */
+.mp-wrap.mp-mini .mp-cover::after {
+  content: ''; position: absolute; inset: 0; border-radius: 10px;
+  background: rgba(0,0,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+.mp-wrap.mp-mini:hover { opacity: 1; }
+/* mini 状态下触摸/点击恢复 */
+.mp-wrap.mp-mini { cursor: pointer; }
+
+/* ─── 拖拽中：禁用 transition 避免卡顿 ─── */
+.mp-wrap.mp-dragging {
+  transition: none !important;
+  opacity: 0.95;
+}
+
+/* ── 氛围背景光晕 ── */
 .mp-bg-blur {
   position: absolute; inset: 0; z-index: 0; opacity: 0.18;
   background: var(--accent, #58a6ff);
-  filter: blur(60px);
-  transform: scale(1.5);
-  pointer-events: none;
-  transition: background 1s ease;
+  filter: blur(60px); transform: scale(1.5);
+  pointer-events: none; transition: background 1s ease;
 }
-.mp-inner { position: relative; z-index: 1; padding: 18px 18px 14px; display: flex; gap: 14px; align-items: flex-start; }
-/* 封面 */
+
+/* ── 内容区 ── */
+.mp-inner {
+  position: relative; z-index: 1;
+  padding: 18px 18px 14px;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+
+/* ── 封面 ── */
 .mp-cover-wrap { position: relative; flex-shrink: 0; }
 .mp-cover {
   width: 72px; height: 72px; border-radius: 14px;
@@ -1891,69 +1966,88 @@ contribObs.observe(document.querySelector('.contrib-card'));
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 .mp-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 13px; }
-.mp-cover-wrap:hover .mp-cover { transform: scale(1.04); }
-/* 黑胶旋转 */
+
+/* ── 黑胶 ── */
 .mp-vinyl {
   position: absolute; bottom: -6px; right: -6px;
   width: 28px; height: 28px; border-radius: 50%;
-  background: conic-gradient(#1a1a2e 0deg, #16213e 90deg, #0f3460 180deg, #1a1a2e 270deg, #16213e 360deg);
+  background: conic-gradient(#1a1a2e 0deg,#16213e 90deg,#0f3460 180deg,#1a1a2e 270deg,#16213e 360deg);
   border: 2px solid rgba(255,255,255,0.15);
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   animation: mpSpin 3s linear infinite paused;
 }
 .mp-vinyl::after {
   content: ''; position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%,-50%);
   width: 8px; height: 8px; border-radius: 50%;
   background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
 }
 .mp-vinyl.spinning { animation-play-state: running; }
 @keyframes mpSpin { to { transform: rotate(360deg); } }
-/* 信息 */
+
+/* ── 信息 ── */
 .mp-info { flex: 1; min-width: 0; }
 .mp-title {
-  font-family: 'Syne', 'DM Mono', monospace; font-size: 14px; font-weight: 600;
-  color: var(--fg, #e8eaf0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: 'Syne','DM Mono',monospace; font-size: 14px; font-weight: 600;
+  color: var(--fg,#e8eaf0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin-bottom: 2px;
 }
-.mp-artist { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--fg3, #4a505e); margin-bottom: 10px; }
-/* 进度条 */
-.mp-progress-wrap { margin-bottom: 10px; cursor: pointer; }
+.mp-artist { font-family: 'DM Mono',monospace; font-size: 11px; color: var(--fg3,#4a505e); margin-bottom: 10px; }
+
+/* ── 进度条（移动端触摸热区加高）── */
+.mp-progress-wrap {
+  margin-bottom: 10px; cursor: pointer;
+  /* 增大触摸热区，拇指好操作 */
+  padding: 10px 0; margin-top: -10px;
+}
 .mp-progress-bg {
   height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px;
   position: relative; overflow: visible;
 }
 .mp-progress-fill {
-  height: 100%; background: var(--accent, #58a6ff); border-radius: 4px;
+  height: 100%; background: var(--accent,#58a6ff); border-radius: 4px;
   width: 0%; transition: width 0.1s linear;
-  box-shadow: 0 0 8px var(--glow, rgba(88,166,255,0.4));
+  box-shadow: 0 0 8px var(--glow,rgba(88,166,255,0.4));
 }
 .mp-progress-thumb {
   position: absolute; top: 50%; right: -1px; transform: translateY(-50%);
-  width: 10px; height: 10px; border-radius: 50%;
+  width: 12px; height: 12px; border-radius: 50%;
   background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-  opacity: 0; transition: opacity 0.2s;
-  pointer-events: none;
+  opacity: 0; transition: opacity 0.2s; pointer-events: none;
 }
+/* 移动端：始终显示 thumb，方便触摸 */
+@media (max-width: 640px) { .mp-progress-thumb { opacity: 1; } }
 .mp-progress-wrap:hover .mp-progress-thumb { opacity: 1; }
-.mp-time-row { display: flex; justify-content: space-between; margin-top: 4px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--fg3, #4a505e); }
-/* 控制按钮 */
+.mp-time-row {
+  display: flex; justify-content: space-between; margin-top: 4px;
+  font-family: 'DM Mono',monospace; font-size: 10px; color: var(--fg3,#4a505e);
+}
+
+/* ── 控制按钮 ── */
 .mp-controls { display: flex; align-items: center; gap: 4px; }
 .mp-btn {
-  width: 30px; height: 30px; border-radius: 8px; border: none;
-  background: rgba(255,255,255,0.06); color: var(--fg2, #8b909e);
+  /* 移动端最小点击区域 44×44 */
+  min-width: 36px; min-height: 36px;
+  width: 36px; height: 36px;
+  border-radius: 10px; border: none;
+  background: rgba(255,255,255,0.06); color: var(--fg2,#8b909e);
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: background 0.2s, color 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
-.mp-btn svg { width: 16px; height: 16px; }
-.mp-btn:hover { background: rgba(255,255,255,0.14); color: var(--fg, #e8eaf0); transform: scale(1.08); }
+.mp-btn svg { width: 18px; height: 18px; }
+.mp-btn:hover { background: rgba(255,255,255,0.14); color: var(--fg,#e8eaf0); }
+.mp-btn:active { transform: scale(0.93); }
 .mp-play-btn {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: var(--accent, #58a6ff); color: #fff;
-  box-shadow: 0 4px 14px var(--glow, rgba(88,166,255,0.4));
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--accent,#58a6ff); color: #fff;
+  box-shadow: 0 4px 14px var(--glow,rgba(88,166,255,0.4));
 }
-.mp-play-btn:hover { background: var(--accent, #58a6ff); opacity: 0.88; transform: scale(1.1); }
-.mp-vol-btn { margin-left: 4px; }
+.mp-play-btn:hover { opacity: 0.88; }
+.mp-play-btn:active { transform: scale(0.92); }
+.mp-vol-btn { margin-left: 2px; }
+
+/* 音量 slider：移动端隐藏（静音 toggle 足够） */
 .mp-volume {
   -webkit-appearance: none; appearance: none;
   width: 56px; height: 3px; border-radius: 3px;
@@ -1961,56 +2055,80 @@ contribObs.observe(document.querySelector('.contrib-card'));
 }
 .mp-volume::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--fg2, #8b909e); cursor: pointer;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--fg2,#8b909e); cursor: pointer;
 }
-/* 播放列表 toggle 按钮 */
+@media (max-width: 640px) { .mp-volume { display: none; } }
+
+/* ── 播放列表 toggle 按钮 ── */
 .mp-list-btn {
   position: absolute; top: 14px; right: 14px;
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-  color: var(--fg3, #4a505e); font-size: 13px;
-  width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
+  color: var(--fg3,#4a505e); font-size: 13px;
+  width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.2s, color 0.2s;
-  z-index: 2;
+  z-index: 2; -webkit-tap-highlight-color: transparent;
 }
-.mp-list-btn:hover { background: rgba(255,255,255,0.14); color: var(--fg, #e8eaf0); }
-/* 播放列表面板 */
+.mp-list-btn:hover { background: rgba(255,255,255,0.14); color: var(--fg,#e8eaf0); }
+
+/* ── 播放列表面板 ── */
 .mp-playlist {
   position: relative; z-index: 1;
   max-height: 0; overflow: hidden;
   transition: max-height 0.38s cubic-bezier(0.25,1,0.5,1);
   border-top: 1px solid transparent;
 }
-.mp-playlist.open {
-  max-height: 220px;
-  border-top-color: rgba(255,255,255,0.07);
-}
-.mp-pl-header { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg3, #4a505e); padding: 10px 18px 6px; }
-.mp-pl-list { overflow-y: auto; max-height: 170px; padding: 0 8px 8px; }
+.mp-playlist.open { max-height: 260px; border-top-color: rgba(255,255,255,0.07); }
+/* 移动端更高 */
+@media (max-width: 640px) { .mp-playlist.open { max-height: 40vh; } }
+.mp-pl-header { font-family: 'DM Mono',monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg3,#4a505e); padding: 10px 18px 6px; }
+.mp-pl-list { overflow-y: auto; max-height: 200px; padding: 0 8px 8px; -webkit-overflow-scrolling: touch; }
+@media (max-width: 640px) { .mp-pl-list { max-height: calc(40vh - 50px); } }
 .mp-pl-list::-webkit-scrollbar { width: 3px; }
 .mp-pl-list::-webkit-scrollbar-track { background: transparent; }
 .mp-pl-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
 .mp-pl-item {
-  display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 9px;
+  display: flex; align-items: center; gap: 10px;
+  /* 移动端最小高度 44px */
+  padding: 10px 10px; border-radius: 9px;
   cursor: pointer; transition: background 0.18s;
-  font-family: 'DM Mono', monospace; font-size: 12px; color: var(--fg2, #8b909e);
+  font-family: 'DM Mono',monospace; font-size: 12px; color: var(--fg2,#8b909e);
+  -webkit-tap-highlight-color: transparent;
 }
-.mp-pl-item:hover { background: rgba(255,255,255,0.07); color: var(--fg, #e8eaf0); }
-.mp-pl-item.active { background: rgba(88,166,255,0.12); color: var(--accent, #58a6ff); }
-.mp-pl-num { width: 18px; text-align: center; font-size: 10px; color: var(--fg3, #4a505e); flex-shrink: 0; }
+.mp-pl-item:hover, .mp-pl-item:active { background: rgba(255,255,255,0.07); color: var(--fg,#e8eaf0); }
+.mp-pl-item.active { background: rgba(88,166,255,0.12); color: var(--accent,#58a6ff); }
+.mp-pl-num { width: 18px; text-align: center; font-size: 10px; color: var(--fg3,#4a505e); flex-shrink: 0; }
 .mp-pl-item.active .mp-pl-num::before { content: '▶'; font-size: 8px; }
 .mp-pl-item.active .mp-pl-num-text { display: none; }
 .mp-pl-info { flex: 1; min-width: 0; }
 .mp-pl-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mp-pl-by { font-size: 10px; color: var(--fg3, #4a505e); margin-top: 1px; }
-/* 拖动把手 */
+.mp-pl-by { font-size: 10px; color: var(--fg3,#4a505e); margin-top: 1px; }
+
+/* ── 拖动把手（桌面端可见）── */
 .mp-drag-handle {
   position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-  color: rgba(255,255,255,0.18); font-size: 14px; cursor: grab; letter-spacing: 2px;
-  z-index: 3; line-height: 1;
+  color: rgba(255,255,255,0.2); font-size: 14px; cursor: grab; letter-spacing: 2px;
+  z-index: 3; line-height: 1; padding: 4px 16px;
 }
 .mp-drag-handle:active { cursor: grabbing; }
+/* 移动端隐藏把手提示（整个 inner 区域可拖） */
+@media (max-width: 640px) { .mp-drag-handle { display: none; } }
+
+/* ── 迷你状态指示器（mini 模式下的播放状态点）── */
+.mp-mini-indicator {
+  display: none;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent, #58a6ff);
+  margin-top: 4px;
+  animation: mpMiniBlink 1.4s ease-in-out infinite;
+}
+.mp-wrap.mp-mini .mp-mini-indicator { display: block; }
+.mp-wrap.mp-mini .mp-mini-indicator.paused { animation: none; background: rgba(255,255,255,0.25); }
+@keyframes mpMiniBlink {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
+}
 </style>
 
 <script>
@@ -2197,7 +2315,10 @@ contribObs.observe(document.querySelector('.contrib-card'));
     thumbEl.style.right = ((1 - ratio) * 100) + '%';
   }
   progWrap.addEventListener('mousedown', e => { isDragging = true; seekTo(e); });
-  progWrap.addEventListener('touchstart', e => { isDragging = true; seekTo(e); }, { passive: true });
+  progWrap.addEventListener('touchstart', e => {
+    e.stopPropagation(); // 阻止冒泡到播放器拖拽层
+    isDragging = true; seekTo(e);
+  }, { passive: true });
   window.addEventListener('mousemove',  e => { if (isDragging) seekTo(e); });
   window.addEventListener('touchmove',  e => { if (isDragging) seekTo(e); }, { passive: true });
   window.addEventListener('mouseup',   () => { isDragging = false; });
@@ -2226,30 +2347,214 @@ contribObs.observe(document.querySelector('.contrib-card'));
     listBtn.style.color = playlist.classList.contains('open') ? 'var(--accent)' : '';
   });
 
-  // 拖动播放器
-  const mpWrap = document.getElementById('musicPlayer');
-  const handle = document.getElementById('mpDragHandle');
-  let dragState = null;
+  /* ══════════════════════════════════════════════
+     📱 移动优先拖拽系统 + 自动缩小靠边逻辑
+     ══════════════════════════════════════════════
+
+     状态机：
+       normal  → 完整展开，可拖拽任意位置
+       mini    → 缩为 64px 胶囊，吸附到左/右屏幕边缘
+                 点击 / 触摸 → 恢复 normal
+
+     触发缩小：
+       - 静置 IDLE_MS 毫秒后自动进入 mini
+       - 拖拽松手后重置计时
+
+     拖拽策略：
+       - 桌面端：鼠标 handle 拖拽
+       - 移动端：touch 整体拖拽，避免与进度条冲突
+         （进度条自身 touchstart 会 stopPropagation）
+  ════════════════════════════════════════════════ */
+
+  const mpWrap      = document.getElementById('musicPlayer');
+  const handle      = document.getElementById('mpDragHandle');
+  const miniIndicator = document.getElementById('mpMiniIndicator');
+
+  const isMobile = () => window.innerWidth <= 640;
+  const IDLE_MS  = 4000; // 静置 4 秒后缩小
+
+  let idleTimer   = null;
+  let isMini      = false;
+  let dragActive  = false;
+  let dragStart   = null; // { clientX, clientY, origLeft, origTop }
+  let lastPos     = { left: null, top: null }; // px 绝对定位
+
+  /* ── 位置工具 ── */
+  function getAbsPos() {
+    const r = mpWrap.getBoundingClientRect();
+    return { left: r.left, top: r.top };
+  }
+
+  // 切换为绝对坐标定位（脱离 bottom/right 模式，让拖拽更直观）
+  function switchToAbsolute() {
+    const r = mpWrap.getBoundingClientRect();
+    mpWrap.style.bottom = 'auto';
+    mpWrap.style.right  = 'auto';
+    mpWrap.style.left   = r.left + 'px';
+    mpWrap.style.top    = r.top  + window.scrollY + 'px';
+    lastPos = { left: r.left, top: r.top + window.scrollY };
+  }
+
+  function applyPos(left, top) {
+    const maxLeft = window.innerWidth  - mpWrap.offsetWidth  - 8;
+    const maxTop  = window.innerHeight - mpWrap.offsetHeight - 8;
+    left = Math.max(8, Math.min(left, maxLeft));
+    top  = Math.max(8, Math.min(top,  maxTop));
+    mpWrap.style.left = left + 'px';
+    mpWrap.style.top  = top  + 'px';
+    lastPos = { left, top };
+  }
+
+  /* ── Mini 状态机 ── */
+  function enterMini() {
+    if (isMini) return;
+    isMini = true;
+    // 关闭播放列表
+    playlist.classList.remove('open');
+    // 先切换到绝对定位，方便 mini 吸边
+    if (mpWrap.style.bottom !== 'auto') switchToAbsolute();
+    mpWrap.classList.add('mp-mini');
+    // 吸附到最近的左/右边缘
+    snapToEdge(lastPos.left + mpWrap.offsetWidth / 2 > window.innerWidth / 2 ? 'right' : 'left');
+    updateMiniIndicator();
+  }
+
+  function exitMini() {
+    if (!isMini) return;
+    isMini = false;
+    mpWrap.classList.remove('mp-mini');
+    // 吸边移回屏幕内合适位置
+    const vw = window.innerWidth;
+    const newLeft = vw > 640
+      ? vw - 340 - 24   // 桌面：右下角
+      : 16;              // 移动：左侧 16px
+    const newTop = window.innerHeight - mpWrap.offsetHeight - 20;
+    requestAnimationFrame(() => applyPos(newLeft, newTop));
+    resetIdleTimer();
+  }
+
+  function snapToEdge(side) {
+    const margin   = 8;
+    const miniW    = 64;
+    const snapLeft = side === 'right' ? window.innerWidth - miniW - margin : margin;
+    applyPos(snapLeft, lastPos.top);
+  }
+
+  function updateMiniIndicator() {
+    if (!miniIndicator) return;
+    miniIndicator.classList.toggle('paused', audio.paused);
+  }
+
+  /* ── 空闲计时器 ── */
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    if (!isMini) {
+      idleTimer = setTimeout(enterMini, IDLE_MS);
+    }
+  }
+
+  /* ── 拖拽核心 ── */
+  function onDragStart(clientX, clientY) {
+    if (isMini) { exitMini(); return; } // mini 时点击恢复
+    clearTimeout(idleTimer);
+    if (mpWrap.style.bottom !== 'auto') switchToAbsolute();
+    dragActive = true;
+    dragStart  = { clientX, clientY, origLeft: lastPos.left, origTop: lastPos.top };
+    mpWrap.classList.add('mp-dragging');
+  }
+
+  function onDragMove(clientX, clientY) {
+    if (!dragActive || !dragStart) return;
+    const dx = clientX - dragStart.clientX;
+    const dy = clientY - dragStart.clientY;
+    applyPos(dragStart.origLeft + dx, dragStart.origTop + dy);
+  }
+
+  function onDragEnd() {
+    if (!dragActive) return;
+    dragActive = false;
+    dragStart  = null;
+    mpWrap.classList.remove('mp-dragging');
+    resetIdleTimer();
+  }
+
+  /* ── 桌面鼠标拖拽（把手）── */
   handle.addEventListener('mousedown', e => {
-    const rect = mpWrap.getBoundingClientRect();
-    dragState = { startX: e.clientX, startY: e.clientY, origRight: window.innerWidth - rect.right, origBottom: window.innerHeight - rect.bottom };
     e.preventDefault();
+    onDragStart(e.clientX, e.clientY);
   });
-  window.addEventListener('mousemove', e => {
-    if (!dragState) return;
-    const dx = e.clientX - dragState.startX;
-    const dy = e.clientY - dragState.startY;
-    let newRight  = dragState.origRight - dx;
-    let newBottom = dragState.origBottom - dy;
-    newRight  = Math.max(8, Math.min(newRight,  window.innerWidth  - mpWrap.offsetWidth  - 8));
-    newBottom = Math.max(8, Math.min(newBottom, window.innerHeight - mpWrap.offsetHeight - 8));
-    mpWrap.style.right  = newRight  + 'px';
-    mpWrap.style.bottom = newBottom + 'px';
+  window.addEventListener('mousemove', e => { if (dragActive) onDragMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup',   () => onDragEnd());
+
+  /* ── 移动端触摸拖拽（整个 inner 区域，但进度条除外）── */
+  const innerEl = mpWrap.querySelector('.mp-inner');
+
+  innerEl.addEventListener('touchstart', e => {
+    // 进度条和控制按钮区域不触发拖拽
+    const tag = e.target.tagName;
+    if (tag === 'BUTTON' || tag === 'INPUT' || e.target.closest('.mp-progress-wrap, .mp-controls, .mp-list-btn')) {
+      return;
+    }
+    if (e.touches.length !== 1) return;
+    onDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    // 阻止 body 滚动
+    if (!isMini) e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchmove', e => {
+    if (dragActive) {
+      e.preventDefault(); // 拖拽时锁定页面滚动
+      onDragMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: false });
+
+  window.addEventListener('touchend', () => onDragEnd());
+  window.addEventListener('touchcancel', () => onDragEnd());
+
+  /* ── mini 模式点击恢复 ── */
+  mpWrap.addEventListener('click', e => {
+    if (isMini) {
+      e.stopPropagation();
+      exitMini();
+    }
   });
-  window.addEventListener('mouseup', () => { dragState = null; });
+
+  /* ── 用户交互重置空闲计时 ── */
+  mpWrap.addEventListener('pointerdown', resetIdleTimer);
+
+  /* ── 播放状态变化更新 mini 指示器 ── */
+  audio.addEventListener('play',  () => { updateMiniIndicator(); });
+  audio.addEventListener('pause', () => { updateMiniIndicator(); });
+
+  /* ── 窗口 resize 边界修正 ── */
+  window.addEventListener('resize', () => {
+    if (mpWrap.style.left === '' && mpWrap.style.top === '') return;
+    const r = mpWrap.getBoundingClientRect();
+    applyPos(r.left, r.top + window.scrollY);
+  });
+
+  /* ── 初始化位置 ── */
+  function initPosition() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // 先让 DOM 渲染，取到实际高度
+    requestAnimationFrame(() => {
+      const h = mpWrap.offsetHeight;
+      const w = mpWrap.offsetWidth;
+      const initLeft = vw > 640 ? vw - w - 24 : 16;
+      const initTop  = vh - h - (vw > 640 ? 28 : 20);
+      mpWrap.style.bottom = 'auto';
+      mpWrap.style.right  = 'auto';
+      mpWrap.style.left   = initLeft + 'px';
+      mpWrap.style.top    = initTop  + 'px';
+      lastPos = { left: initLeft, top: initTop };
+      resetIdleTimer();
+    });
+  }
 
   // 初始化
   loadSong(false);
+  initPosition();
 })();
 </script>
 
