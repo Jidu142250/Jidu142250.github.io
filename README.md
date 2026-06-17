@@ -1,10 +1,8 @@
 # Jidu142250.github.io
 
-我的个人主页 👉 [Jidu142250.github.io](https://Jidu142250.github.io)
+👉 [Jidu142250.github.io](https://Jidu142250.github.io)
 
-## 简介
-
-这是我的 GitHub Pages 个人站点仓库，主要用于展示和分享。
+**写代码的人，不需要理由。**
 
 ## 技术栈
 
@@ -14,6 +12,10 @@
 ## 项目结构
 
 - `index.html` — 主页面
+
+## 📊 GitHub 统计
+
+![Jidu142250's GitHub Stats](https://github-readme-stats.vercel.app/api?username=Jidu142250&show_icons=true&theme=default)
 
 ## 联系我
 
