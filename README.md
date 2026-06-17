@@ -17,6 +17,12 @@
 
 ![Jidu142250's GitHub Stats](https://github-readme-stats.vercel.app/api?username=Jidu142250&show_icons=true&theme=default)
 
+![GitHub Streak](https://streak-stats.demolab.com/?user=Jidu142250&theme=default)
+
+![GitHub Trophies](https://github-profile-trophy.vercel.app/?username=Jidu142250&theme=flat&no-frame=true&column=4)
+
+![Profile Views](https://komarev.com/ghpvc/?username=Jidu142250&color=blue&style=flat-square&label=访客次数)
+
 ## 联系我
 
 欢迎通过 GitHub Issues 或 Discussions 与我交流。
