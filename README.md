@@ -19,4 +19,4 @@
 
 ## 联系我
 
-欢迎通过 GitHub Issues 世 Discussions 与我交流。
+欢迎通过 Gmail Telegram QQ X 与我交流。
